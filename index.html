@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<<!DOCTYPE html>
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
@@ -181,7 +181,7 @@
       </div>
 
       <div class="footer">
-        Данные обновляются с w360028.ds-h.ru/stats.php в реальном времени.
+        Данные берутся с w360028.ds-h.ru/stats.php и обновляются каждые 15 секунд.
       </div>
     </div>
   </div>
@@ -199,8 +199,10 @@
     let allPlayers = [];
 
     function calcKd(p) {
-      if (!p.deaths) return p.kills || 0;
-      return (p.kills || 0) / p.deaths;
+      const kills = Number(p.kills) || 0;
+      const deaths = Number(p.deaths) || 0;
+      if (!deaths) return kills;
+      return kills / deaths;
     }
 
     function formatKd(v) {
@@ -213,7 +215,10 @@
 
     function computeSummary(players) {
       playersCountEl.textContent = players.length.toString();
-      const totalDmg = players.reduce((sum, p) => sum + (p.dmg || 0), 0);
+      const totalDmg = players.reduce(
+        (sum, p) => sum + (Number(p.dmg) || 0),
+        0
+      );
       totalDmgEl.textContent = totalDmg.toLocaleString("ru-RU");
 
       if (players.length === 0) {
@@ -226,7 +231,9 @@
 
     function renderTable(players) {
       tbody.innerHTML = "";
-      const sorted = [...players].sort((a, b) => (b.dmg || 0) - (a.dmg || 0));
+      const sorted = [...players].sort(
+        (a, b) => (Number(b.dmg) || 0) - (Number(a.dmg) || 0)
+      );
 
       sorted.forEach((p, index) => {
         const kd = calcKd(p);
@@ -282,13 +289,15 @@
         kdTd.textContent = formatKd(kd);
 
         const hsTd = document.createElement("td");
-        hsTd.textContent = p.hs != null ? p.hs.toString() : "-";
+        hsTd.textContent = p.hs != null ? String(p.hs) : "-";
 
+        const dmgNum = Number(p.dmg);
         const dmgTd = document.createElement("td");
-        dmgTd.textContent = p.dmg != null ? p.dmg.toLocaleString("ru-RU") : "-";
+        dmgTd.textContent = !isNaN(dmgNum) ? dmgNum.toLocaleString("ru-RU") : "-";
 
+        const skillNum = Number(p.skill);
         const skillTd = document.createElement("td");
-        skillTd.textContent = p.skill != null ? formatSkill(p.skill) : "-";
+        skillTd.textContent = !isNaN(skillNum) ? formatSkill(skillNum) : "-";
 
         tr.appendChild(rankTd);
         tr.appendChild(nameTd);
