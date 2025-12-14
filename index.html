@@ -164,102 +164,157 @@
   </div>
 
   <script>
-    const MAX_ENERGY = 20;
-    const REGEN_INTERVAL_MS = 1000; // +1 энергии в секунду
-    const STORAGE_KEY = "cs_tapper_state_v1";
+  const API_URL = "https://w360028.ds-h.ru/stats.php";
 
-    const scoreEl = document.getElementById("score");
-    const bestScoreEl = document.getElementById("bestScore");
-    const energyTextEl = document.getElementById("energyText");
-    const energyFillEl = document.getElementById("energyFill");
-    const agentBtn = document.getElementById("agentBtn");
+  const tbody = document.getElementById("tbody");
+  const searchInput = document.getElementById("searchInput");
+  const clearBtn = document.getElementById("clearBtn");
+  const playersCountEl = document.getElementById("playersCount");
+  const totalDmgEl = document.getElementById("totalDmg");
+  const bestKdNameEl = document.getElementById("bestKdName");
 
-    let state = {
-      score: 0,
-      bestScore: 0,
-      energy: MAX_ENERGY,
-      lastUpdate: Date.now()
-    };
+  let allPlayers = [];
 
-    function loadState() {
-      try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (!raw) return;
-        const saved = JSON.parse(raw);
-        if (typeof saved.score === "number") state.score = saved.score;
-        if (typeof saved.bestScore === "number") state.bestScore = saved.bestScore;
-        if (typeof saved.energy === "number") state.energy = saved.energy;
-        if (typeof saved.lastUpdate === "number") state.lastUpdate = saved.lastUpdate;
-      } catch (e) {
-        console.warn("Failed to load state", e);
+  function calcKd(p) {
+    if (!p.deaths) return p.kills || 0;
+    return (p.kills || 0) / p.deaths;
+  }
+
+  function formatKd(v) {
+    return v.toFixed(2);
+  }
+
+  function formatSkill(v) {
+    return v.toFixed(2);
+  }
+
+  function computeSummary(players) {
+    playersCountEl.textContent = players.length.toString();
+    const totalDmg = players.reduce((sum, p) => sum + (p.dmg || 0), 0);
+    totalDmgEl.textContent = totalDmg.toLocaleString("ru-RU");
+
+    if (players.length === 0) {
+      bestKdNameEl.textContent = "—";
+    } else {
+      const best = [...players].sort((a, b) => calcKd(b) - calcKd(a))[0];
+      bestKdNameEl.textContent = best.name;
+    }
+  }
+
+  function renderTable(players) {
+    tbody.innerHTML = "";
+    const sorted = [...players].sort((a, b) => (b.dmg || 0) - (a.dmg || 0));
+
+    sorted.forEach((p, index) => {
+      const kd = calcKd(p);
+      const tr = document.createElement("tr");
+
+      const rankTd = document.createElement("td");
+      rankTd.className = "col-rank";
+      rankTd.textContent = index + 1;
+
+      const nameTd = document.createElement("td");
+      nameTd.className = "col-name";
+      const badge = document.createElement("div");
+      badge.style.display = "flex";
+      badge.style.flexDirection = "column";
+
+      const main = document.createElement("span");
+      main.textContent = p.name;
+
+      const sub = document.createElement("span");
+      sub.style.fontSize = "10px";
+      sub.style.color = "#64748b";
+      sub.textContent = p.steamid || "";
+
+      badge.appendChild(main);
+      badge.appendChild(sub);
+
+      const badgesWrap = document.createElement("div");
+      badgesWrap.style.marginTop = "2px";
+      badgesWrap.style.display = "flex";
+      badgesWrap.style.flexWrap = "wrap";
+      badgesWrap.style.gap = "4px";
+
+      if (index === 0) {
+        const dmgBadge = document.createElement("span");
+        dmgBadge.className = "badge dmg";
+        dmgBadge.textContent = "Лидер по DMG";
+        badgesWrap.appendChild(dmgBadge);
       }
-    }
-
-    function saveState() {
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-      } catch (e) {
-        console.warn("Failed to save state", e);
+      if (kd >= 1.5) {
+        const kdBadge = document.createElement("span");
+        kdBadge.className = "badge kd";
+        kdBadge.textContent = "Высокий K/D";
+        badgesWrap.appendChild(kdBadge);
       }
-    }
 
-    function syncEnergyByTime() {
-      const now = Date.now();
-      const diffSec = Math.floor((now - state.lastUpdate) / 1000);
-      if (diffSec > 0 && state.energy < MAX_ENERGY) {
-        state.energy = Math.min(MAX_ENERGY, state.energy + diffSec);
-        state.lastUpdate = now;
-      } else {
-        state.lastUpdate = now;
+      if (badgesWrap.children.length > 0) {
+        badge.appendChild(badgesWrap);
       }
+
+      nameTd.appendChild(badge);
+
+      const kdTd = document.createElement("td");
+      kdTd.textContent = formatKd(kd);
+
+      const hsTd = document.createElement("td");
+      hsTd.textContent = p.hs != null ? p.hs.toString() : "-";
+
+      const dmgTd = document.createElement("td");
+      dmgTd.textContent = p.dmg != null ? p.dmg.toLocaleString("ru-RU") : "-";
+
+      const skillTd = document.createElement("td");
+      skillTd.textContent = p.skill != null ? formatSkill(p.skill) : "-";
+
+      tr.appendChild(rankTd);
+      tr.appendChild(nameTd);
+      tr.appendChild(kdTd);
+      tr.appendChild(hsTd);
+      tr.appendChild(dmgTd);
+      tr.appendChild(skillTd);
+
+      tbody.appendChild(tr);
+    });
+
+    computeSummary(players);
+  }
+
+  function applyFilter() {
+    const q = searchInput.value.trim().toLowerCase();
+    if (!q) {
+      renderTable(allPlayers);
+      return;
     }
+    const filtered = allPlayers.filter(p =>
+      (p.name || "").toLowerCase().includes(q) ||
+      (p.steamid || "").toLowerCase().includes(q)
+    );
+    renderTable(filtered);
+  }
 
-    function updateUI() {
-      scoreEl.textContent = state.score;
-      bestScoreEl.textContent = state.bestScore;
-      energyTextEl.textContent = `Энергия: ${state.energy} / ${MAX_ENERGY}`;
-      const ratio = Math.max(0, Math.min(1, state.energy / MAX_ENERGY));
-      energyFillEl.style.width = (ratio * 100).toFixed(1) + "%";
-
-      if (state.energy <= 0) {
-        agentBtn.classList.add("disabled");
-      } else {
-        agentBtn.classList.remove("disabled");
-      }
+  async function loadStats() {
+    try {
+      const res = await fetch(API_URL, { cache: "no-store" });
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      const data = await res.json();
+      if (!data || !Array.isArray(data.players)) throw new Error("Bad JSON");
+      allPlayers = data.players;
+      applyFilter();
+    } catch (e) {
+      console.error("Не удалось загрузить статистику:", e);
     }
+  }
 
-    function tap() {
-      if (state.energy <= 0) return;
+  searchInput.addEventListener("input", applyFilter);
+  clearBtn.addEventListener("click", () => {
+    searchInput.value = "";
+    applyFilter();
+  });
 
-      state.score += 1;
-      state.energy -= 1;
-      if (state.score > state.bestScore) {
-        state.bestScore = state.score;
-      }
-      state.lastUpdate = Date.now();
-      saveState();
-      animatePulse();
-      updateUI();
-    }
+  loadStats();
+  setInterval(loadStats, 15000);
+</script>
 
-    function animatePulse() {
-      const pulse = document.createElement("div");
-      pulse.className = "pulse";
-      agentBtn.appendChild(pulse);
-      setTimeout(() => pulse.remove(), 400);
-    }
-
-    function regenLoop() {
-      syncEnergyByTime();
-      updateUI();
-    }
-
-    agentBtn.addEventListener("click", tap);
-
-    loadState();
-    syncEnergyByTime();
-    updateUI();
-    setInterval(regenLoop, REGEN_INTERVAL_MS);
-  </script>
 </body>
 </html>
