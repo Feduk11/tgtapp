@@ -1,4 +1,4 @@
-<<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
@@ -109,9 +109,11 @@
     }
     tbody tr:nth-child(odd) {
       background: rgba(15, 23, 42, 0.6);
+      cursor: pointer;
     }
     tbody tr:nth-child(even) {
       background: rgba(15, 23, 42, 0.9);
+      cursor: pointer;
     }
     tbody tr:hover {
       background: rgba(59, 130, 246, 0.18);
@@ -144,6 +146,87 @@
       font-size: 11px;
       color: #64748b;
       text-align: center;
+    }
+
+    /* Модалка профиля */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.85);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 20;
+    }
+    .modal-backdrop.visible {
+      display: flex;
+    }
+    .modal {
+      width: 100%;
+      max-width: 420px;
+      background: radial-gradient(circle at top, #1e293b 0, #020617 70%);
+      border-radius: 16px;
+      padding: 16px 16px 12px;
+      border: 1px solid rgba(96, 165, 250, 0.7);
+      box-shadow: 0 0 28px rgba(37, 99, 235, 0.75);
+    }
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .modal-title {
+      font-size: 16px;
+      font-weight: 600;
+    }
+    .modal-close {
+      border: none;
+      background: transparent;
+      color: #9ca3af;
+      font-size: 18px;
+      cursor: pointer;
+      padding: 2px 4px;
+    }
+    .modal-sub {
+      font-size: 11px;
+      color: #9ca3af;
+      margin-bottom: 10px;
+    }
+    .modal-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin-bottom: 10px;
+      font-size: 12px;
+    }
+    .stat-block {
+      background: rgba(15, 23, 42, 0.9);
+      border-radius: 10px;
+      padding: 8px;
+      border: 1px solid rgba(75, 85, 99, 0.9);
+    }
+    .stat-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #9ca3af;
+      margin-bottom: 2px;
+    }
+    .stat-value {
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .stat-extra {
+      font-size: 11px;
+      color: #9ca3af;
+      margin-top: 2px;
+    }
+    .modal-footer-text {
+      font-size: 11px;
+      color: #6b7280;
+      text-align: center;
+      margin-top: 4px;
     }
   </style>
 </head>
@@ -186,6 +269,46 @@
     </div>
   </div>
 
+  <!-- Модальное окно профиля -->
+  <div class="modal-backdrop" id="profileModal">
+    <div class="modal">
+      <div class="modal-header">
+        <div>
+          <div class="modal-title" id="profileName">Игрок</div>
+          <div class="modal-sub" id="profileSteam">SteamID</div>
+        </div>
+        <button class="modal-close" id="profileCloseBtn" aria-label="Закрыть">×</button>
+      </div>
+
+      <div class="modal-grid">
+        <div class="stat-block">
+          <div class="stat-label">K/D</div>
+          <div class="stat-value" id="profileKd">0.00</div>
+          <div class="stat-extra" id="profileKillsDeaths">0 / 0 убийств/смертей</div>
+        </div>
+        <div class="stat-block">
+          <div class="stat-label">Урон</div>
+          <div class="stat-value" id="profileDmg">0</div>
+          <div class="stat-extra" id="profileSkill">Skill 0.00</div>
+        </div>
+        <div class="stat-block">
+          <div class="stat-label">Точность</div>
+          <div class="stat-value" id="profileAcc">0%</div>
+          <div class="stat-extra" id="profileShotsHits">0 / 0 попаданий</div>
+        </div>
+        <div class="stat-block">
+          <div class="stat-label">Headshots</div>
+          <div class="stat-value" id="profileHsRate">0%</div>
+          <div class="stat-extra" id="profileHs">0 HS</div>
+        </div>
+      </div>
+
+      <div class="modal-footer-text" id="profileSummary">
+        Профиль игрока по данным csstats.
+      </div>
+    </div>
+  </div>
+
   <script>
     const API_URL = "https://w360028.ds-h.ru/stats.php";
 
@@ -195,6 +318,20 @@
     const playersCountEl = document.getElementById("playersCount");
     const totalDmgEl = document.getElementById("totalDmg");
     const bestKdNameEl = document.getElementById("bestKdName");
+
+    const profileModal = document.getElementById("profileModal");
+    const profileCloseBtn = document.getElementById("profileCloseBtn");
+    const profileNameEl = document.getElementById("profileName");
+    const profileSteamEl = document.getElementById("profileSteam");
+    const profileKdEl = document.getElementById("profileKd");
+    const profileKillsDeathsEl = document.getElementById("profileKillsDeaths");
+    const profileDmgEl = document.getElementById("profileDmg");
+    const profileSkillEl = document.getElementById("profileSkill");
+    const profileAccEl = document.getElementById("profileAcc");
+    const profileShotsHitsEl = document.getElementById("profileShotsHits");
+    const profileHsRateEl = document.getElementById("profileHsRate");
+    const profileHsEl = document.getElementById("profileHs");
+    const profileSummaryEl = document.getElementById("profileSummary");
 
     let allPlayers = [];
 
@@ -229,6 +366,49 @@
       }
     }
 
+    function openProfile(player) {
+      const name = player.name || "Игрок";
+      const steam = player.steamid || "—";
+      const kills = Number(player.kills) || 0;
+      const deaths = Number(player.deaths) || 0;
+      const hs = Number(player.hs) || 0;
+      const shots = Number(player.shots) || 0;
+      const hits = Number(player.hits) || 0;
+      const dmg = Number(player.dmg) || 0;
+      const skill = Number(player.skill) || 0;
+
+      const kd = calcKd(player);
+      const acc = shots > 0 ? (hits / shots) * 100 : 0;
+      const hsRate = kills > 0 ? (hs / kills) * 100 : 0;
+
+      profileNameEl.textContent = name;
+      profileSteamEl.textContent = steam;
+
+      profileKdEl.textContent = formatKd(kd);
+      profileKillsDeathsEl.textContent = `${kills} убийств / ${deaths} смертей`;
+
+      profileDmgEl.textContent = dmg.toLocaleString("ru-RU");
+      profileSkillEl.textContent = `Skill ${formatSkill(skill)}`;
+
+      profileAccEl.textContent = `${acc.toFixed(1)}%`;
+      profileShotsHitsEl.textContent = `${hits} попаданий из ${shots} выстрелов`;
+
+      profileHsRateEl.textContent = `${hsRate.toFixed(1)}%`;
+      profileHsEl.textContent = `${hs} HS`;
+
+      let summary = "Профиль игрока по данным csstats.";
+      if (dmg > 20000) summary = "Стабильный дамагер сервера.";
+      else if (hsRate > 40) summary = "Очень высокий процент headshot.";
+      else if (acc > 25) summary = "Хорошая точность стрельбы.";
+      profileSummaryEl.textContent = summary;
+
+      profileModal.classList.add("visible");
+    }
+
+    function closeProfile() {
+      profileModal.classList.remove("visible");
+    }
+
     function renderTable(players) {
       tbody.innerHTML = "";
       const sorted = [...players].sort(
@@ -238,6 +418,7 @@
       sorted.forEach((p, index) => {
         const kd = calcKd(p);
         const tr = document.createElement("tr");
+        tr.dataset.index = index.toString();
 
         const rankTd = document.createElement("td");
         rankTd.className = "col-rank";
@@ -306,6 +487,8 @@
         tr.appendChild(dmgTd);
         tr.appendChild(skillTd);
 
+        tr.addEventListener("click", () => openProfile(sorted[index]));
+
         tbody.appendChild(tr);
       });
 
@@ -342,6 +525,11 @@
     clearBtn.addEventListener("click", () => {
       searchInput.value = "";
       applyFilter();
+    });
+
+    profileCloseBtn.addEventListener("click", closeProfile);
+    profileModal.addEventListener("click", (e) => {
+      if (e.target === profileModal) closeProfile();
     });
 
     loadStats();
