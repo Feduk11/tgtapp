@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <title>CS Tapper</title>
+  <title>CS 1.6 Server Stats</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <style>
@@ -18,9 +18,8 @@
     }
     .app {
       width: 100%;
-      max-width: 420px;
+      max-width: 480px;
       padding: 16px;
-      text-align: center;
     }
     .card {
       background: rgba(10, 14, 30, 0.9);
@@ -37,284 +36,307 @@
     .subtitle {
       font-size: 13px;
       color: #9ba3c0;
-      margin-bottom: 14px;
+      margin-bottom: 12px;
     }
-    .stats {
+    .summary {
       display: flex;
       justify-content: space-between;
-      margin-bottom: 12px;
-      font-size: 14px;
-    }
-    .stat-label {
+      font-size: 12px;
       color: #9ba3c0;
-      font-size: 12px;
-    }
-    .stat-value {
-      font-weight: 600;
-      font-size: 16px;
-    }
-    .energy-bar {
-      position: relative;
-      width: 100%;
-      height: 12px;
-      border-radius: 999px;
-      background: rgba(30, 40, 80, 0.8);
-      overflow: hidden;
-      margin-bottom: 16px;
-    }
-    .energy-fill {
-      position: absolute;
-      top: 0;
-      left: 0;
-      height: 100%;
-      width: 50%;
-      background: linear-gradient(90deg, #23d5ab, #23a6d5, #4a7dff);
-      transition: width 0.15s ease-out;
-    }
-    .energy-text {
-      font-size: 12px;
-      color: #b3bcdb;
       margin-bottom: 10px;
     }
-    .agent-wrap {
-      margin: 10px 0 6px;
+    .summary span strong {
+      color: #ffffff;
+      font-weight: 600;
     }
-    .agent-btn {
-      width: 220px;
-      height: 220px;
-      border-radius: 999px;
-      border: 3px solid rgba(90, 140, 255, 0.8);
-      background: radial-gradient(circle at 30% 0%, #3d7bff 0, #111727 55%, #050711 100%);
-      box-shadow: 0 0 32px rgba(40, 120, 255, 0.7);
+    .search {
+      margin-bottom: 10px;
       display: flex;
-      align-items: center;
-      justify-content: center;
+      gap: 8px;
+    }
+    .search input {
+      flex: 1;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(90, 120, 180, 0.6);
+      background: rgba(5, 8, 20, 0.8);
+      color: #f5f5f5;
+      font-size: 13px;
+      outline: none;
+    }
+    .search input::placeholder {
+      color: #6f7896;
+    }
+    .search button {
+      padding: 6px 12px;
+      border-radius: 999px;
+      border: none;
+      font-size: 13px;
       cursor: pointer;
-      position: relative;
-      overflow: hidden;
-      transition: transform 0.08s ease-out, box-shadow 0.08s ease-out;
-      margin: 0 auto;
+      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+      color: #fff;
+      font-weight: 500;
     }
-    .agent-btn.disabled {
-      filter: grayscale(0.4) brightness(0.7);
-      box-shadow: 0 0 10px rgba(20, 20, 30, 0.8);
-      cursor: default;
+    .table-wrap {
+      max-height: 320px;
+      overflow-y: auto;
+      border-radius: 10px;
+      border: 1px solid rgba(70, 100, 190, 0.5);
+      background: radial-gradient(circle at top left, rgba(56, 189, 248, 0.12), rgba(15, 23, 42, 0.92));
     }
-    .agent-btn:active:not(.disabled) {
-      transform: scale(0.96);
-      box-shadow: 0 0 18px rgba(40, 120, 255, 0.8);
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
     }
-    .agent-img {
-      width: 80%;
-      height: 80%;
-      border-radius: 999px;
-      background:
-        radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.22) 0, transparent 55%),
-        url("https://via.placeholder.com/512x512.png?text=CS+SWAT") center/cover no-repeat;
+    thead {
+      position: sticky;
+      top: 0;
+      background: rgba(15, 23, 42, 0.98);
+      z-index: 1;
     }
-    .hint {
+    th, td {
+      padding: 6px 8px;
+      text-align: left;
+      white-space: nowrap;
+    }
+    th {
       font-size: 11px;
-      color: #67708c;
-      margin-top: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #94a3b8;
+      border-bottom: 1px solid rgba(71, 85, 105, 0.8);
     }
-    .pulse {
-      position: absolute;
-      inset: 0;
+    tbody tr:nth-child(odd) {
+      background: rgba(15, 23, 42, 0.6);
+    }
+    tbody tr:nth-child(even) {
+      background: rgba(15, 23, 42, 0.9);
+    }
+    tbody tr:hover {
+      background: rgba(59, 130, 246, 0.18);
+    }
+    .col-rank { width: 40px; text-align: center; }
+    .col-name { max-width: 160px; overflow: hidden; text-overflow: ellipsis; }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 6px;
       border-radius: 999px;
-      box-shadow: 0 0 26px rgba(0, 200, 255, 0.8);
-      opacity: 0;
-      pointer-events: none;
-      animation: pulse 0.4s ease-out;
+      font-size: 10px;
+      font-weight: 500;
+      background: rgba(52, 211, 153, 0.16);
+      color: #a7f3d0;
+      border: 1px solid rgba(52, 211, 153, 0.35);
     }
-    @keyframes pulse {
-      0% { opacity: 0.8; transform: scale(1); }
-      100% { opacity: 0; transform: scale(1.25); }
+    .badge.dmg {
+      background: rgba(96, 165, 250, 0.15);
+      color: #bfdbfe;
+      border-color: rgba(96, 165, 250, 0.45);
+    }
+    .badge.kd {
+      background: rgba(251, 191, 36, 0.18);
+      color: #fef3c7;
+      border-color: rgba(251, 191, 36, 0.5);
+    }
+    .footer {
+      margin-top: 8px;
+      font-size: 11px;
+      color: #64748b;
+      text-align: center;
     }
   </style>
 </head>
 <body>
   <div class="app">
     <div class="card">
-      <div class="title">CS Tapper</div>
-      <div class="subtitle">Тапай по спецназу, копи очки</div>
+      <div class="title">Статистика сервера CS 1.6</div>
+      <div class="subtitle">Топ игроков по урону и K/D (данные из csstats)</div>
 
-      <div class="stats">
-        <div>
-          <div class="stat-label">Счёт</div>
-          <div class="stat-value" id="score">0</div>
-        </div>
-        <div>
-          <div class="stat-label">Лучший</div>
-          <div class="stat-value" id="bestScore">0</div>
-        </div>
+      <div class="summary">
+        <span>Игроков: <strong id="playersCount">0</strong></span>
+        <span>Общий урон: <strong id="totalDmg">0</strong></span>
+        <span>Лучший K/D: <strong id="bestKdName">—</strong></span>
       </div>
 
-      <div class="energy-bar">
-        <div class="energy-fill" id="energyFill"></div>
+      <div class="search">
+        <input id="searchInput" type="text" placeholder="Поиск по нику / SteamID" />
+        <button id="clearBtn">Сброс</button>
       </div>
-      <div class="energy-text" id="energyText">Энергия: 0 / 0</div>
 
-      <div class="agent-wrap">
-        <div class="agent-btn" id="agentBtn">
-          <div class="agent-img"></div>
-        </div>
-        <div class="hint">Энергия тратится при каждом тапе и постепенно восстанавливается.</div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th class="col-rank">#</th>
+              <th>Игрок</th>
+              <th>K/D</th>
+              <th>HS</th>
+              <th>DMG</th>
+              <th>Skill</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+
+      <div class="footer">
+        Данные обновляются с w360028.ds-h.ru/stats.php в реальном времени.
       </div>
     </div>
   </div>
 
   <script>
-  const API_URL = "https://w360028.ds-h.ru/stats.php";
+    const API_URL = "https://w360028.ds-h.ru/stats.php";
 
-  const tbody = document.getElementById("tbody");
-  const searchInput = document.getElementById("searchInput");
-  const clearBtn = document.getElementById("clearBtn");
-  const playersCountEl = document.getElementById("playersCount");
-  const totalDmgEl = document.getElementById("totalDmg");
-  const bestKdNameEl = document.getElementById("bestKdName");
+    const tbody = document.getElementById("tbody");
+    const searchInput = document.getElementById("searchInput");
+    const clearBtn = document.getElementById("clearBtn");
+    const playersCountEl = document.getElementById("playersCount");
+    const totalDmgEl = document.getElementById("totalDmg");
+    const bestKdNameEl = document.getElementById("bestKdName");
 
-  let allPlayers = [];
+    let allPlayers = [];
 
-  function calcKd(p) {
-    if (!p.deaths) return p.kills || 0;
-    return (p.kills || 0) / p.deaths;
-  }
-
-  function formatKd(v) {
-    return v.toFixed(2);
-  }
-
-  function formatSkill(v) {
-    return v.toFixed(2);
-  }
-
-  function computeSummary(players) {
-    playersCountEl.textContent = players.length.toString();
-    const totalDmg = players.reduce((sum, p) => sum + (p.dmg || 0), 0);
-    totalDmgEl.textContent = totalDmg.toLocaleString("ru-RU");
-
-    if (players.length === 0) {
-      bestKdNameEl.textContent = "—";
-    } else {
-      const best = [...players].sort((a, b) => calcKd(b) - calcKd(a))[0];
-      bestKdNameEl.textContent = best.name;
+    function calcKd(p) {
+      if (!p.deaths) return p.kills || 0;
+      return (p.kills || 0) / p.deaths;
     }
-  }
 
-  function renderTable(players) {
-    tbody.innerHTML = "";
-    const sorted = [...players].sort((a, b) => (b.dmg || 0) - (a.dmg || 0));
+    function formatKd(v) {
+      return v.toFixed(2);
+    }
 
-    sorted.forEach((p, index) => {
-      const kd = calcKd(p);
-      const tr = document.createElement("tr");
+    function formatSkill(v) {
+      return v.toFixed(2);
+    }
 
-      const rankTd = document.createElement("td");
-      rankTd.className = "col-rank";
-      rankTd.textContent = index + 1;
+    function computeSummary(players) {
+      playersCountEl.textContent = players.length.toString();
+      const totalDmg = players.reduce((sum, p) => sum + (p.dmg || 0), 0);
+      totalDmgEl.textContent = totalDmg.toLocaleString("ru-RU");
 
-      const nameTd = document.createElement("td");
-      nameTd.className = "col-name";
-      const badge = document.createElement("div");
-      badge.style.display = "flex";
-      badge.style.flexDirection = "column";
-
-      const main = document.createElement("span");
-      main.textContent = p.name;
-
-      const sub = document.createElement("span");
-      sub.style.fontSize = "10px";
-      sub.style.color = "#64748b";
-      sub.textContent = p.steamid || "";
-
-      badge.appendChild(main);
-      badge.appendChild(sub);
-
-      const badgesWrap = document.createElement("div");
-      badgesWrap.style.marginTop = "2px";
-      badgesWrap.style.display = "flex";
-      badgesWrap.style.flexWrap = "wrap";
-      badgesWrap.style.gap = "4px";
-
-      if (index === 0) {
-        const dmgBadge = document.createElement("span");
-        dmgBadge.className = "badge dmg";
-        dmgBadge.textContent = "Лидер по DMG";
-        badgesWrap.appendChild(dmgBadge);
+      if (players.length === 0) {
+        bestKdNameEl.textContent = "—";
+      } else {
+        const best = [...players].sort((a, b) => calcKd(b) - calcKd(a))[0];
+        bestKdNameEl.textContent = best.name;
       }
-      if (kd >= 1.5) {
-        const kdBadge = document.createElement("span");
-        kdBadge.className = "badge kd";
-        kdBadge.textContent = "Высокий K/D";
-        badgesWrap.appendChild(kdBadge);
+    }
+
+    function renderTable(players) {
+      tbody.innerHTML = "";
+      const sorted = [...players].sort((a, b) => (b.dmg || 0) - (a.dmg || 0));
+
+      sorted.forEach((p, index) => {
+        const kd = calcKd(p);
+        const tr = document.createElement("tr");
+
+        const rankTd = document.createElement("td");
+        rankTd.className = "col-rank";
+        rankTd.textContent = index + 1;
+
+        const nameTd = document.createElement("td");
+        nameTd.className = "col-name";
+        const badge = document.createElement("div");
+        badge.style.display = "flex";
+        badge.style.flexDirection = "column";
+
+        const main = document.createElement("span");
+        main.textContent = p.name;
+
+        const sub = document.createElement("span");
+        sub.style.fontSize = "10px";
+        sub.style.color = "#64748b";
+        sub.textContent = p.steamid || "";
+
+        badge.appendChild(main);
+        badge.appendChild(sub);
+
+        const badgesWrap = document.createElement("div");
+        badgesWrap.style.marginTop = "2px";
+        badgesWrap.style.display = "flex";
+        badgesWrap.style.flexWrap = "wrap";
+        badgesWrap.style.gap = "4px";
+
+        if (index === 0) {
+          const dmgBadge = document.createElement("span");
+          dmgBadge.className = "badge dmg";
+          dmgBadge.textContent = "Лидер по DMG";
+          badgesWrap.appendChild(dmgBadge);
+        }
+        if (kd >= 1.5) {
+          const kdBadge = document.createElement("span");
+          kdBadge.className = "badge kd";
+          kdBadge.textContent = "Высокий K/D";
+          badgesWrap.appendChild(kdBadge);
+        }
+
+        if (badgesWrap.children.length > 0) {
+          badge.appendChild(badgesWrap);
+        }
+
+        nameTd.appendChild(badge);
+
+        const kdTd = document.createElement("td");
+        kdTd.textContent = formatKd(kd);
+
+        const hsTd = document.createElement("td");
+        hsTd.textContent = p.hs != null ? p.hs.toString() : "-";
+
+        const dmgTd = document.createElement("td");
+        dmgTd.textContent = p.dmg != null ? p.dmg.toLocaleString("ru-RU") : "-";
+
+        const skillTd = document.createElement("td");
+        skillTd.textContent = p.skill != null ? formatSkill(p.skill) : "-";
+
+        tr.appendChild(rankTd);
+        tr.appendChild(nameTd);
+        tr.appendChild(kdTd);
+        tr.appendChild(hsTd);
+        tr.appendChild(dmgTd);
+        tr.appendChild(skillTd);
+
+        tbody.appendChild(tr);
+      });
+
+      computeSummary(players);
+    }
+
+    function applyFilter() {
+      const q = searchInput.value.trim().toLowerCase();
+      if (!q) {
+        renderTable(allPlayers);
+        return;
       }
+      const filtered = allPlayers.filter(p =>
+        (p.name || "").toLowerCase().includes(q) ||
+        (p.steamid || "").toLowerCase().includes(q)
+      );
+      renderTable(filtered);
+    }
 
-      if (badgesWrap.children.length > 0) {
-        badge.appendChild(badgesWrap);
+    async function loadStats() {
+      try {
+        const res = await fetch(API_URL, { cache: "no-store" });
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        const data = await res.json();
+        if (!data || !Array.isArray(data.players)) throw new Error("Bad JSON");
+        allPlayers = data.players;
+        applyFilter();
+      } catch (e) {
+        console.error("Не удалось загрузить статистику:", e);
       }
+    }
 
-      nameTd.appendChild(badge);
-
-      const kdTd = document.createElement("td");
-      kdTd.textContent = formatKd(kd);
-
-      const hsTd = document.createElement("td");
-      hsTd.textContent = p.hs != null ? p.hs.toString() : "-";
-
-      const dmgTd = document.createElement("td");
-      dmgTd.textContent = p.dmg != null ? p.dmg.toLocaleString("ru-RU") : "-";
-
-      const skillTd = document.createElement("td");
-      skillTd.textContent = p.skill != null ? formatSkill(p.skill) : "-";
-
-      tr.appendChild(rankTd);
-      tr.appendChild(nameTd);
-      tr.appendChild(kdTd);
-      tr.appendChild(hsTd);
-      tr.appendChild(dmgTd);
-      tr.appendChild(skillTd);
-
-      tbody.appendChild(tr);
+    searchInput.addEventListener("input", applyFilter);
+    clearBtn.addEventListener("click", () => {
+      searchInput.value = "";
+      applyFilter();
     });
 
-    computeSummary(players);
-  }
-
-  function applyFilter() {
-    const q = searchInput.value.trim().toLowerCase();
-    if (!q) {
-      renderTable(allPlayers);
-      return;
-    }
-    const filtered = allPlayers.filter(p =>
-      (p.name || "").toLowerCase().includes(q) ||
-      (p.steamid || "").toLowerCase().includes(q)
-    );
-    renderTable(filtered);
-  }
-
-  async function loadStats() {
-    try {
-      const res = await fetch(API_URL, { cache: "no-store" });
-      if (!res.ok) throw new Error("HTTP " + res.status);
-      const data = await res.json();
-      if (!data || !Array.isArray(data.players)) throw new Error("Bad JSON");
-      allPlayers = data.players;
-      applyFilter();
-    } catch (e) {
-      console.error("Не удалось загрузить статистику:", e);
-    }
-  }
-
-  searchInput.addEventListener("input", applyFilter);
-  clearBtn.addEventListener("click", () => {
-    searchInput.value = "";
-    applyFilter();
-  });
-
-  loadStats();
-  setInterval(loadStats, 15000);
-</script>
-
+    loadStats();
+    setInterval(loadStats, 15000);
+  </script>
 </body>
 </html>
