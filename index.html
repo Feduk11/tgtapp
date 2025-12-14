@@ -478,7 +478,13 @@
         badge.style.flexDirection = "column";
 
         const main = document.createElement("span");
-        main.textContent = p.name;
+const rawName = String(p.name || "");
+const maxLen = 15;
+const shortName = rawName.length > maxLen
+  ? rawName.slice(0, maxLen) + "..."
+  : rawName;
+main.textContent = shortName;
+main.title = rawName; // полный ник по наведению
 
         const sub = document.createElement("span");
         sub.style.fontSize = "10px";
